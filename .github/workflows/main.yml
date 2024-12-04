@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4  # 也更新到 v4
     
     - name: Install dependencies
       run: |
@@ -34,7 +34,6 @@ jobs:
       run: |
         cd src
         chmod +x Buildit
-        # 将构建输出保存到日志文件
         ./Buildit Release 2>&1 | tee build.log
         
     - name: Debug build outputs
@@ -65,11 +64,22 @@ jobs:
         find . -name "*.a" -exec cp -v {} artifacts/lib/ \;
         find . -name "*.h" -exec cp -v {} artifacts/include/ \;
         
+        # 生成构建信息
+        {
+          echo "Build timestamp: $(date)"
+          echo "Git commit: $(git rev-parse HEAD)"
+          echo "Git branch: $(git rev-parse --abbrev-ref HEAD)"
+          echo "Build platform: $(uname -a)"
+          echo "Compiler version: $(gcc --version | head -n1)"
+        } > artifacts/build-info.txt
+        
         echo "=== Artifacts contents ==="
         ls -R artifacts/
 
     - name: Upload build artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4  # 更新到 v4
       with:
         name: build-outputs
         path: artifacts/
+        compression-level: 9  # v4 新特性：最大压缩级别
+        retention-days: 90    # v4 新特性：保留天数
