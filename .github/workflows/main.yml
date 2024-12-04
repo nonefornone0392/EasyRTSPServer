@@ -34,46 +34,42 @@ jobs:
       run: |
         cd src
         chmod +x Buildit
-        ./Buildit Release
+        # 将构建输出保存到日志文件
+        ./Buildit Release 2>&1 | tee build.log
         
-    - name: Collect and upload artifacts
-      if: always()
+    - name: Debug build outputs
+      run: |
+        echo "=== Directory structure ==="
+        find . -type d
+        
+        echo "=== Build outputs ==="
+        find . -name "*.so" -o -name "*.a"
+        
+        echo "=== Build directories ==="
+        find . -type d -name "build" -o -name "dist"
+
+    - name: Collect artifacts
       run: |
         echo "Creating artifacts directory..."
         mkdir -p artifacts/lib
         mkdir -p artifacts/include
+        mkdir -p artifacts/logs
         
-        echo "Current directory: $(pwd)"
-        echo "Directory contents:"
-        ls -la
+        # 复制构建日志
+        if [ -f src/build.log ]; then
+          cp src/build.log artifacts/logs/
+        fi
         
-        echo "Finding and copying build outputs..."
-        # 注意这里不需要 src/ 前缀，因为我们已经在正确的目录
-        find . -name "*.so" -exec cp {} artifacts/lib/ \;
-        find . -name "*.a" -exec cp {} artifacts/lib/ \;
+        # 复制编译产物
+        find . -name "*.so" -exec cp -v {} artifacts/lib/ \;
+        find . -name "*.a" -exec cp -v {} artifacts/lib/ \;
+        find . -name "*.h" -exec cp -v {} artifacts/include/ \;
         
-        # 复制头文件(如果需要)
-        find . -name "*.h" -exec cp {} artifacts/include/ \;
-        
-        echo "Creating version info..."
-        git rev-parse HEAD > artifacts/version.txt
-        date >> artifacts/version.txt
-        
-        echo "Artifacts contents:"
+        echo "=== Artifacts contents ==="
         ls -R artifacts/
 
     - name: Upload build artifacts
-      if: always()
       uses: actions/upload-artifact@v3
       with:
         name: build-outputs
         path: artifacts/
-        
-    - name: Upload build logs
-      if: always()
-      uses: actions/upload-artifact@v3
-      with:
-        name: build-logs
-        path: |
-          **/*.log
-          **/build/*.log
