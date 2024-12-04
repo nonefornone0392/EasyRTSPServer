@@ -11,22 +11,56 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-    # ... 前面的步骤保持不变 ...
+    - uses: actions/checkout@v3
+    
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y build-essential
+        sudo apt-get install -y \
+          libavcodec-dev \
+          libavformat-dev \
+          libavutil-dev \
+          libavfilter-dev \
+          libswscale-dev \
+          libpostproc-dev \
+          libswresample-dev \
+          libx264-dev \
+          libfdk-aac-dev \
+          libbz2-dev \
+          zlib1g-dev
 
+    - name: Build Release
+      run: |
+        cd src
+        chmod +x Buildit
+        ./Buildit Release
+        
     - name: Collect and upload artifacts
       if: always()
       run: |
         echo "Creating artifacts directory..."
-        mkdir -p artifacts
+        mkdir -p artifacts/lib
+        mkdir -p artifacts/include
+        
+        echo "Current directory: $(pwd)"
+        echo "Directory contents:"
+        ls -la
         
         echo "Finding and copying build outputs..."
-        # 复制所有的 .so 文件
-        find src -name "*.so" -exec cp {} artifacts/ \;
-        # 复制所有的 .a 文件
-        find src -name "*.a" -exec cp {} artifacts/ \;
+        # 注意这里不需要 src/ 前缀，因为我们已经在正确的目录
+        find . -name "*.so" -exec cp {} artifacts/lib/ \;
+        find . -name "*.a" -exec cp {} artifacts/lib/ \;
         
-        echo "Artifacts directory contents:"
-        ls -la artifacts/
+        # 复制头文件(如果需要)
+        find . -name "*.h" -exec cp {} artifacts/include/ \;
+        
+        echo "Creating version info..."
+        git rev-parse HEAD > artifacts/version.txt
+        date >> artifacts/version.txt
+        
+        echo "Artifacts contents:"
+        ls -R artifacts/
 
     - name: Upload build artifacts
       if: always()
@@ -41,6 +75,5 @@ jobs:
       with:
         name: build-logs
         path: |
-          src/*.log
-          src/nbproject/*.log
-          src/build/*.log
+          **/*.log
+          **/build/*.log
