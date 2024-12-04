@@ -33,11 +33,13 @@ jobs:
 
     - name: Build x64
       run: |
+        cd src  # 切换到src目录
         chmod +x Buildit
         ./Buildit x64
         
     - name: List build artifacts
       run: |
+        cd src  # 切换到src目录
         ls -R dist/
 
     - name: Upload x64 artifacts
@@ -45,5 +47,5 @@ jobs:
       with:
         name: x64-build
         path: |
-          dist/x64/GNU-Linux/
-          dist/x64/
+          src/dist/x64/GNU-Linux/
+          src/dist/x64/
