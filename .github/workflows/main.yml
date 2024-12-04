@@ -1,4 +1,4 @@
-name: Build x64
+name: Build Project
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
     branches: [ main ]
 
 jobs:
-  build-x64:
+  build:
     runs-on: ubuntu-latest
     
     steps:
@@ -17,7 +17,6 @@ jobs:
       run: |
         sudo apt-get update
         sudo apt-get install -y build-essential
-        # 安装开发库
         sudo apt-get install -y \
           libavcodec-dev \
           libavformat-dev \
@@ -31,21 +30,31 @@ jobs:
           libbz2-dev \
           zlib1g-dev
 
-    - name: Build x64
+    - name: Debug directory structure
       run: |
-        cd src  # 切换到src目录
+        echo "Current directory: $(pwd)"
+        echo "Directory contents:"
+        ls -la
+        echo "src directory contents:"
+        ls -la src/
+        echo "src/nbproject contents:"
+        ls -la src/nbproject/
+
+    - name: Build Release
+      run: |
+        cd src
         chmod +x Buildit
-        ./Buildit x64
+        ./Buildit Release
         
     - name: List build artifacts
       run: |
-        cd src  # 切换到src目录
+        cd src
         ls -R dist/
 
-    - name: Upload x64 artifacts
+    - name: Upload build artifacts
       uses: actions/upload-artifact@v3
       with:
-        name: x64-build
+        name: release-build
         path: |
-          src/dist/x64/GNU-Linux/
-          src/dist/x64/
+          src/dist/Release/GNU-Linux/
+          src/dist/Release/
