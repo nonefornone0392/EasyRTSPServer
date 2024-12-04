@@ -11,73 +11,29 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-    - uses: actions/checkout@v3
-    
-    - name: Install dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y build-essential
-        sudo apt-get install -y \
-          libavcodec-dev \
-          libavformat-dev \
-          libavutil-dev \
-          libavfilter-dev \
-          libswscale-dev \
-          libpostproc-dev \
-          libswresample-dev \
-          libx264-dev \
-          libfdk-aac-dev \
-          libbz2-dev \
-          zlib1g-dev
+    # ... 前面的步骤保持不变 ...
 
-    - name: Debug directory structure before build
+    - name: Collect and upload artifacts
+      if: always()
       run: |
-        echo "Current directory: $(pwd)"
-        echo "Root directory contents:"
-        ls -la
-        echo "====="
+        echo "Creating artifacts directory..."
+        mkdir -p artifacts
         
-        if [ -d "src" ]; then
-          echo "src directory contents:"
-          ls -la src/
-          echo "====="
-          
-          if [ -d "src/nbproject" ]; then
-            echo "src/nbproject contents:"
-            ls -la src/nbproject/
-          else
-            echo "src/nbproject directory not found!"
-          fi
-        else
-          echo "src directory not found!"
-        fi
+        echo "Finding and copying build outputs..."
+        # 复制所有的 .so 文件
+        find src -name "*.so" -exec cp {} artifacts/ \;
+        # 复制所有的 .a 文件
+        find src -name "*.a" -exec cp {} artifacts/ \;
+        
+        echo "Artifacts directory contents:"
+        ls -la artifacts/
 
-    - name: Show Buildit script content
-      run: |
-        if [ -f "src/Buildit" ]; then
-          echo "Content of src/Buildit:"
-          cat src/Buildit
-        else
-          echo "Buildit script not found!"
-        fi
-
-    - name: Build Release with debug output
-      run: |
-        cd src
-        chmod +x Buildit
-        # 添加调试输出到Buildit脚本
-        echo "set -x" >> Buildit
-        ./Buildit Release || true  # 即使失败也继续执行
-        echo "Build command completed"
-        echo "Current directory after build: $(pwd)"
-        echo "Directory contents after build:"
-        ls -la
-
-    - name: Check build artifacts
-      if: always()  # 即使前面的步骤失败也执行
-      run: |
-        echo "Checking for build artifacts..."
-        find . -name "*.so" -o -name "*.a"
+    - name: Upload build artifacts
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: build-outputs
+        path: artifacts/
         
     - name: Upload build logs
       if: always()
